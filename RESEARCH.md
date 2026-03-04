@@ -174,8 +174,9 @@ Complete correction table (all integer sizes):
 **Fix implemented**: auto-detect by comparing canvas emoji width vs actual DOM emoji width (one DOM measurement per font, cached). Safari renders emoji wider than fontSize at small sizes but canvas and DOM agree — so no correction needed there. The original approach (canvas vs fontSize) over-corrected on Safari.
 
 Filed as browser bugs:
-- Chrome: [issues.chromium.org/489494015](https://issues.chromium.org/issues/489494015)
-- Firefox: [bugzilla.mozilla.org/2020894](https://bugzilla.mozilla.org/show_bug.cgi?id=2020894)
+- Chrome: [issues.chromium.org/489494015](https://issues.chromium.org/issues/489494015) — emoji measureText inflation
+- Firefox: [bugzilla.mozilla.org/2020894](https://bugzilla.mozilla.org/show_bug.cgi?id=2020894) — emoji measureText inflation
+- Firefox: [bugzilla.mozilla.org/2020917](https://bugzilla.mozilla.org/show_bug.cgi?id=2020917) — system-ui canvas/DOM font resolution mismatch
 
 ## Discovery: HarfBuzz guessSegmentProperties RTL bug
 
