@@ -1,78 +1,10 @@
-import { prepareWithSegments, type PreparedTextWithSegments } from '../src/layout.ts'
+import { prepareWithSegments, walkLineRanges, type PreparedTextWithSegments } from '../src/layout.ts'
 
-// Layout with max-line-width tracking for shrinkwrap.
-// Same algorithm as layout(), but also returns the widest actual line width.
 function layoutShrinkwrap(prepared: PreparedTextWithSegments, maxWidth: number, lineHeight: number): { lineCount: number, height: number, maxLineWidth: number } {
-  const { widths, kinds, breakableWidths } = prepared
-  if (widths.length === 0) return { lineCount: 0, height: 0, maxLineWidth: 0 }
-
-  let lineCount = 0
-  let lineW = 0
-  let hasContent = false
   let maxLineWidth = 0
-
-  for (let i = 0; i < widths.length; i++) {
-    const w = widths[i]!
-
-    if (!hasContent) {
-      if (w > maxWidth && breakableWidths[i] !== null) {
-        const gWidths = breakableWidths[i]!
-        lineW = 0
-        for (let g = 0; g < gWidths.length; g++) {
-          const gw = gWidths[g]!
-          if (lineW > 0 && lineW + gw > maxWidth) {
-            if (lineW > maxLineWidth) maxLineWidth = lineW
-            lineCount++
-            lineW = gw
-          } else {
-            if (lineW === 0) lineCount++
-            lineW += gw
-          }
-        }
-      } else {
-        lineW = w
-        lineCount++
-      }
-      hasContent = true
-      continue
-    }
-
-    const newW = lineW + w
-
-    if (newW > maxWidth) {
-      if (kinds[i] === 'space') continue
-
-      if (lineW > maxLineWidth) maxLineWidth = lineW
-
-      if (w > maxWidth && breakableWidths[i] !== null) {
-        const gWidths = breakableWidths[i]!
-        lineW = 0
-        for (let g = 0; g < gWidths.length; g++) {
-          const gw = gWidths[g]!
-          if (lineW > 0 && lineW + gw > maxWidth) {
-            if (lineW > maxLineWidth) maxLineWidth = lineW
-            lineCount++
-            lineW = gw
-          } else {
-            if (lineW === 0) lineCount++
-            lineW += gw
-          }
-        }
-      } else {
-        lineCount++
-        lineW = w
-      }
-    } else {
-      lineW = newW
-    }
-  }
-
-  if (lineW > maxLineWidth) maxLineWidth = lineW
-
-  if (!hasContent) {
-    lineCount++
-  }
-
+  const lineCount = walkLineRanges(prepared, maxWidth, line => {
+    if (line.width > maxLineWidth) maxLineWidth = line.width
+  })
   return { lineCount, height: lineCount * lineHeight, maxLineWidth }
 }
 

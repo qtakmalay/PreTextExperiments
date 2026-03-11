@@ -23,7 +23,7 @@ const { height, lineCount } = layout(block, containerWidth, 19)
 
 `prepare()` does a one-time text analysis pass (whitespace normalization, segmentation, punctuation/CJK fixes), then measures the resulting segments via canvas and caches the widths. On browsers that need emoji correction, it also does one cached DOM calibration read per font. `layout()` walks the cached widths to count lines and multiplies by the caller-provided `lineHeight` — no canvas, no DOM, no string operations. Each `layout()` call is ~0.0002ms.
 
-`prepare()` intentionally returns an opaque handle for the hot path. If you need the richer segment-level structure for diagnostics or custom line rendering, use `prepareWithSegments()` and treat that result as the experimental escape hatch. Rich-path helpers like `layoutWithLines()` and `layoutNextLine()` live there on purpose, so variable-width or custom userland layout experiments do not leak complexity into the fast height-estimate path.
+`prepare()` intentionally returns an opaque handle for the hot path. If you need the richer segment-level structure for diagnostics or custom line rendering, use `prepareWithSegments()` and treat that result as the experimental escape hatch. Rich-path helpers like `walkLineRanges()`, `layoutWithLines()`, and `layoutNextLine()` live there on purpose, so variable-width or custom userland layout experiments do not leak complexity into the fast height-estimate path.
 
 If your app wants `Intl.Segmenter` to use a specific locale instead of the runtime default, call `setLocale(locale)` before future `prepare()` calls. `setLocale()` resets the shared caches and retargets the hoisted word segmenter for subsequent text analysis.
 
@@ -34,7 +34,7 @@ If your app wants `Intl.Segmenter` to use a specific locale instead of the runti
 - Chat or messaging UIs: recompute bubble heights on every width change without touching the DOM layout engine.
 - Loading skeletons and cumulative layout shift reduction: reserve the right amount of vertical space before the final text renders.
 - Responsive card/layout decisions: switch between compact and expanded variants based on predicted text height.
-- Canvas or custom renderers: use `layoutWithLines()` to get browser-like wrapping plus per-line segment/grapheme cursors, or `layoutNextLine()` to advance one line at a time through a prepared paragraph when your userland layout wants a different width on each row.
+- Canvas or custom renderers: use `walkLineRanges()` when you want line geometry without materializing strings, `layoutWithLines()` when you want full line text plus cursors, or `layoutNextLine()` to advance one line at a time through a prepared paragraph when your userland layout wants a different width on each row.
 
 ## Performance
 
@@ -68,6 +68,7 @@ Tested across 4 fonts (Helvetica Neue, Georgia, Verdana, Courier New) × 8 sizes
 
 - **CSS config**: targets a common app-text configuration (`white-space: normal`, `word-break: normal`, `overflow-wrap: break-word`, `line-break: auto`). Source newlines are treated as collapsible whitespace, not explicit `<br>`/paragraph breaks. Other configurations (`break-all`, `keep-all`, `strict`, `loose`, `anywhere`) are untested.
 - **`line-height`**: the library does not infer CSS line height. Pass the exact value you render with into `layout()` / `layoutWithLines()`. `line-height: normal` differs across fonts and browsers.
+- **Soft hyphens**: unbroken soft hyphens stay invisible, but if the engine chooses that break, the rich APIs expose a visible trailing `-`. `LayoutLine.trailingDiscretionaryHyphen` tells you when that hyphen was inserted by layout rather than coming from source text.
 - **`system-ui` font**: canvas and DOM resolve this CSS keyword to different font variants at certain sizes on macOS. Use a named font (Inter, Helvetica, Arial, etc.) for guaranteed accuracy. See [RESEARCH.md](RESEARCH.md#discovery-system-ui-font-resolution-mismatch).
 - **Server-side**: importing the module is now safe in non-DOM runtimes, but actual server-side measurement is still not zero-config. Calling `prepare()` without `OffscreenCanvas` or a DOM canvas path will still need an explicit canvas-backed backend. We keep a HarfBuzz (WASM) backend around for headless probes and research.
 

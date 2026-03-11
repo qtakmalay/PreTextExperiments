@@ -113,6 +113,13 @@ export type LayoutLine = {
   trailingDiscretionaryHyphen: boolean // True when a visible trailing hyphen was inserted from a soft hyphen break
 }
 
+export type LayoutLineRange = {
+  width: number // Measured width of this line, e.g. 87.5
+  start: LayoutCursor // Inclusive start cursor in prepared segments/graphemes
+  end: LayoutCursor // Exclusive end cursor in prepared segments/graphemes
+  trailingDiscretionaryHyphen: boolean // True when a visible trailing hyphen was inserted from a soft hyphen break
+}
+
 export type LayoutLinesResult = LayoutResult & {
   lines: LayoutLine[] // Per-line text/width pairs for custom rendering
 }
@@ -410,6 +417,35 @@ function materializeLayoutLine(
     },
     trailingDiscretionaryHyphen: line.discretionaryHyphenBeforeSegmentIndex >= 0,
   }
+}
+
+function toLayoutLineRange(line: InternalLayoutLine): LayoutLineRange {
+  return {
+    width: line.width,
+    start: {
+      segmentIndex: line.startSegmentIndex,
+      graphemeIndex: line.startGraphemeIndex,
+    },
+    end: {
+      segmentIndex: line.endSegmentIndex,
+      graphemeIndex: line.endGraphemeIndex,
+    },
+    trailingDiscretionaryHyphen: line.discretionaryHyphenBeforeSegmentIndex >= 0,
+  }
+}
+
+// Batch low-level line geometry pass. This is the non-materializing counterpart
+// to layoutWithLines(), useful for shrinkwrap and other aggregate geometry work.
+export function walkLineRanges(
+  prepared: PreparedTextWithSegments,
+  maxWidth: number,
+  onLine: (line: LayoutLineRange) => void,
+): number {
+  if (prepared.widths.length === 0) return 0
+
+  return walkPreparedLines(getInternalPrepared(prepared), maxWidth, line => {
+    onLine(toLayoutLineRange(line))
+  })
 }
 
 export function layoutNextLine(

@@ -15,6 +15,7 @@ let prepareWithSegments: LayoutModule['prepareWithSegments']
 let layout: LayoutModule['layout']
 let layoutWithLines: LayoutModule['layoutWithLines']
 let layoutNextLine: LayoutModule['layoutNextLine']
+let walkLineRanges: LayoutModule['walkLineRanges']
 let clearCache: LayoutModule['clearCache']
 let setLocale: LayoutModule['setLocale']
 
@@ -81,7 +82,7 @@ class TestOffscreenCanvas {
 beforeAll(async () => {
   Reflect.set(globalThis, 'OffscreenCanvas', TestOffscreenCanvas)
   const mod = await import('./layout.ts')
-  ;({ prepare, prepareWithSegments, layout, layoutWithLines, layoutNextLine, clearCache, setLocale } = mod)
+  ;({ prepare, prepareWithSegments, layout, layoutWithLines, layoutNextLine, walkLineRanges, clearCache, setLocale } = mod)
 })
 
 beforeEach(() => {
@@ -384,5 +385,34 @@ describe('layout invariants', () => {
     }
 
     expect(actual).toEqual(expected.lines)
+  })
+
+  test('walkLineRanges reproduces layoutWithLines geometry without materializing text', () => {
+    const prepared = prepareWithSegments('foo trans\u00ADatlantic said "hello" to 世界 and waved.', FONT)
+    const width = prepared.widths[0]! + prepared.widths[1]! + prepared.widths[2]! + prepared.breakableWidths[4]![0]! + prepared.discretionaryHyphenWidth + 0.1
+    const expected = layoutWithLines(prepared, width, LINE_HEIGHT)
+    const actual: Array<{
+      width: number
+      start: { segmentIndex: number, graphemeIndex: number }
+      end: { segmentIndex: number, graphemeIndex: number }
+      trailingDiscretionaryHyphen: boolean
+    }> = []
+
+    const lineCount = walkLineRanges(prepared, width, line => {
+      actual.push({
+        width: line.width,
+        start: { ...line.start },
+        end: { ...line.end },
+        trailingDiscretionaryHyphen: line.trailingDiscretionaryHyphen,
+      })
+    })
+
+    expect(lineCount).toBe(expected.lineCount)
+    expect(actual).toEqual(expected.lines.map(line => ({
+      width: line.width,
+      start: line.start,
+      end: line.end,
+      trailingDiscretionaryHyphen: line.trailingDiscretionaryHyphen,
+    })))
   })
 })

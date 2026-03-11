@@ -30,7 +30,7 @@ Internal notes for contributors and agents. Use `README.md` as the public source
 - `src/layout.test.ts` — small durable invariant tests for the exported prepare/layout APIs
 - `pages/accuracy.ts` — browser sweep plus per-line diagnostics
 - `pages/benchmark.ts` — performance comparisons
-- `pages/bubbles.ts` — bubble shrinkwrap demo
+- `pages/bubbles.ts` — bubble shrinkwrap demo using the rich non-materializing line-range walker
 - `pages/demo.ts` — manual line-placement demo built from repeated `layoutNextLine()` calls
 - `pages/columns.ts` — three-column userland reflow demo built from one streamed `layoutNextLine()` pass
 - `pages/contour.ts` — variable-width contour demo built by advancing with `layoutNextLine()`
@@ -45,6 +45,7 @@ Internal notes for contributors and agents. Use `README.md` as the public source
 - `prepare()` / `prepareWithSegments()` do horizontal-only work. `layout()` / `layoutWithLines()` take explicit `lineHeight`.
 - `setLocale(locale?)` retargets the hoisted word segmenter for future `prepare()` calls and clears shared caches. Use it before preparing new text when the app wants a specific `Intl.Segmenter` locale instead of the runtime default.
 - `prepare()` should stay the opaque fast-path handle. If a page/script needs segment arrays, that should usually flow through `prepareWithSegments()` instead of re-exposing internals on the main prepared type.
+- `walkLineRanges()` is the rich-path batch geometry API: no string materialization, but still browser-like line widths/cursors/discretionary-hyphen state. Prefer it over private line walkers for shrinkwrap or aggregate layout work.
 - `prepare()` is internally split into a text-analysis phase and a measurement phase; keep that seam clear, but keep the public API simple unless requirements force a change.
 - The internal segment model now distinguishes at least five break kinds: normal text, collapsible spaces, non-breaking glue (`NBSP` / `NNBSP` / `WJ`-like runs), zero-width break opportunities, and soft hyphens. Do not collapse those back into one boolean unless the model gets richer in a better way.
 - `layout()` is the resize hot path: no DOM reads, no canvas calls, no string work, and avoid gratuitous allocations.
@@ -59,6 +60,7 @@ Internal notes for contributors and agents. Use `README.md` as the public source
 - Soft hyphens should stay invisible when unbroken, but if the engine chooses that break, the broken line should expose a visible trailing hyphen in `layoutWithLines()`.
 - `layoutWithLines()` now exposes `trailingDiscretionaryHyphen` on each line, so userland renderers can tell when a visible trailing hyphen was inserted by a soft-hyphen break instead of coming from source text.
 - `layoutNextLine()` is the rich-path escape hatch for variable-width userland layout. Keep it semantically aligned with `layoutWithLines()`, but do not pull its extra bookkeeping into the hot `layout()` path.
+- `layoutNextLineRange()` stays internal for now. The public low-level surface should stay batch-first (`walkLineRanges()`) unless the streaming-only path proves materially better.
 - Astral CJK ideographs must still hit the CJK path; do not rely on BMP-only `charCodeAt()` checks there.
 - Non-word, non-space segments are break opportunities, same as words.
 - CJK grapheme splitting plus kinsoku merging keeps prohibited punctuation attached to adjacent graphemes.
