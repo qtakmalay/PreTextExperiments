@@ -57,6 +57,8 @@ type CorpusReport = {
   predictedLineCount?: number
   browserLineCount?: number
   browserLineMethod?: 'span-probe' | 'range'
+  alternateBrowserLineMethod?: 'span-probe' | 'range'
+  alternateBrowserLineCount?: number
   probeHeight?: number
   normalizedHeight?: number
   mismatchCount?: number
@@ -91,6 +93,8 @@ type CorpusReport = {
       isSpace: boolean
     }>
   } | null
+  alternateFirstBreakMismatch?: object | null
+  extractorSensitivity?: string | null
   maxLineWidthDrift?: number
   maxDriftLine?: {
     line: number
@@ -218,6 +222,18 @@ function printReport(report: CorpusReport): void {
   if (report.probeHeight !== undefined || report.normalizedHeight !== undefined) {
     console.log(
       `  probe heights: probe ${Math.round(report.probeHeight ?? 0)}px | normalized ${Math.round(report.normalizedHeight ?? 0)}px | book ${actual}px | method ${report.browserLineMethod ?? '-'}`,
+    )
+  }
+  if (report.extractorSensitivity !== null && report.extractorSensitivity !== undefined) {
+    console.log(`  extractor sensitivity: ${report.extractorSensitivity}`)
+  }
+  if (
+    report.alternateBrowserLineMethod !== undefined &&
+    report.alternateBrowserLineCount !== undefined
+  ) {
+    console.log(
+      `  alternate method: ${report.alternateBrowserLineMethod} (${report.predictedLineCount ?? '-'}${report.alternateBrowserLineCount !== undefined ? `/${report.alternateBrowserLineCount}` : ''} lines)` +
+      (report.alternateFirstBreakMismatch === null ? ' exact' : ''),
     )
   }
   if (report.maxDriftLine !== null && report.maxDriftLine !== undefined) {

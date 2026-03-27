@@ -63,11 +63,15 @@ type CorpusReport = {
   predictedLineCount?: number
   browserLineCount?: number
   browserLineMethod?: 'span-probe' | 'range'
+  alternateBrowserLineMethod?: 'span-probe' | 'range'
+  alternateBrowserLineCount?: number
   probeHeight?: number
   normalizedHeight?: number
   mismatchCount?: number
   firstMismatch?: CorpusLineMismatch | null
   firstBreakMismatch?: CorpusBreakMismatch | null
+  alternateFirstBreakMismatch?: CorpusBreakMismatch | null
+  extractorSensitivity?: string | null
   maxLineWidthDrift?: number
   maxDriftLine?: {
     line: number
@@ -659,6 +663,7 @@ function addDiagnostics(
 
   const ourLines = getOurLines(prepared, normalizedText, contentWidth, lineHeight, font)
   const probeResult = getBrowserLinesFromSpans(prepared, lineProbeDiv, normalizedText, font)
+  const rangeResult = getBrowserLinesFromRange(prepared, diagnosticDiv, normalizedText, font)
   const probeHeight = probeResult.height
   const normalizedHeight = diagnosticDiv.getBoundingClientRect().height
   const requiresRangeProbe = rangeProbeScriptRe.test(normalizedText)
@@ -672,11 +677,22 @@ function addDiagnostics(
   const browserResult = forcedMethod === 'span'
     ? probeResult
     : forcedMethod === 'range'
-      ? getBrowserLinesFromRange(prepared, diagnosticDiv, normalizedText, font)
+      ? rangeResult
       : probeReliable
         ? probeResult
-        : getBrowserLinesFromRange(prepared, diagnosticDiv, normalizedText, font)
+        : rangeResult
   const browserLines = browserResult.lines
+  const browserLineMethod = forcedMethod === 'span'
+    ? 'span-probe'
+    : forcedMethod === 'range'
+      ? 'range'
+      : probeReliable
+        ? 'span-probe'
+        : 'range'
+  const alternateBrowserLineMethod = browserLineMethod === 'span-probe' ? 'range' : 'span-probe'
+  const alternateBrowserLines = alternateBrowserLineMethod === 'span-probe'
+    ? probeResult.lines
+    : rangeResult.lines
 
   let mismatchCount = 0
   let firstMismatch: CorpusLineMismatch | null = null
@@ -714,22 +730,43 @@ function addDiagnostics(
     }
   }
 
+  const firstBreakMismatch = getFirstBreakMismatch(
+    prepared,
+    normalizedText,
+    contentWidth,
+    ourLines,
+    browserLines,
+    font,
+    direction,
+  )
+  const alternateFirstBreakMismatch = getFirstBreakMismatch(
+    prepared,
+    normalizedText,
+    contentWidth,
+    ourLines,
+    alternateBrowserLines,
+    font,
+    direction,
+  )
+  const extractorSensitivity =
+    firstBreakMismatch !== null && alternateFirstBreakMismatch === null
+      ? `${browserLineMethod} mismatch disappears with ${alternateBrowserLineMethod}`
+      : null
+
   return {
     ...report,
     predictedLineCount: ourLines.length,
     browserLineCount: browserLines.length,
-    browserLineMethod: forcedMethod === 'span'
-      ? 'span-probe'
-      : forcedMethod === 'range'
-        ? 'range'
-        : probeReliable
-          ? 'span-probe'
-          : 'range',
+    browserLineMethod,
+    alternateBrowserLineMethod,
+    alternateBrowserLineCount: alternateBrowserLines.length,
     probeHeight,
     normalizedHeight,
     mismatchCount,
     firstMismatch,
-    firstBreakMismatch: getFirstBreakMismatch(prepared, normalizedText, contentWidth, ourLines, browserLines, font, direction),
+    firstBreakMismatch,
+    alternateFirstBreakMismatch,
+    extractorSensitivity,
     maxLineWidthDrift,
     maxDriftLine,
   }

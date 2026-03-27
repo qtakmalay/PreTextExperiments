@@ -60,6 +60,10 @@ type ProbeReport = {
   predictedLineCount?: number
   browserLineCount?: number
   firstBreakMismatch?: ProbeBreakMismatch | null
+  alternateBrowserLineMethod?: 'range' | 'span'
+  alternateBrowserLineCount?: number
+  alternateFirstBreakMismatch?: ProbeBreakMismatch | null
+  extractorSensitivity?: string | null
   message?: string
 }
 
@@ -137,12 +141,6 @@ function setError(message: string): void {
   publishReport(withRequestId({ status: 'error', message }))
 }
 
-function getBrowserLines(prepared: PreparedTextWithSegments, measuredFont: string, dir: string): ProbeLine[] {
-  return browserLineMethod === 'span'
-    ? getBrowserLinesFromSpans(prepared, measuredFont, dir)
-    : getBrowserLinesFromRange(prepared, measuredFont, dir)
-}
-
 function getBrowserLinesFromSpans(prepared: PreparedTextWithSegments, measuredFont: string, dir: string): ProbeLine[] {
   const lines: ProbeLine[] = []
   const units = getDiagnosticUnits(prepared)
@@ -198,6 +196,17 @@ function getBrowserLinesFromSpans(prepared: PreparedTextWithSegments, measuredFo
   pushLine()
   diagnosticDiv.textContent = text
   return lines
+}
+
+function getBrowserLines(
+  prepared: PreparedTextWithSegments,
+  measuredFont: string,
+  dir: string,
+  method: 'range' | 'span',
+): ProbeLine[] {
+  return method === 'span'
+    ? getBrowserLinesFromSpans(prepared, measuredFont, dir)
+    : getBrowserLinesFromRange(prepared, measuredFont, dir)
 }
 
 function getBrowserLinesFromRange(prepared: PreparedTextWithSegments, measuredFont: string, dir: string): ProbeLine[] {
@@ -498,7 +507,15 @@ function init(): void {
     const predicted = layout(prepared, contentWidth, lineHeight)
     const actualHeight = book.getBoundingClientRect().height
     const ourLines = getOurLines(prepared, normalizedText, contentWidth, font)
-    const browserLines = getBrowserLines(prepared, font, direction)
+    const alternateBrowserLineMethod = browserLineMethod === 'span' ? 'range' : 'span'
+    const browserLines = getBrowserLines(prepared, font, direction, browserLineMethod)
+    const alternateBrowserLines = getBrowserLines(prepared, font, direction, alternateBrowserLineMethod)
+    const firstBreakMismatch = getFirstBreakMismatch(normalizedText, contentWidth, ourLines, browserLines)
+    const alternateFirstBreakMismatch = getFirstBreakMismatch(normalizedText, contentWidth, ourLines, alternateBrowserLines)
+    const extractorSensitivity =
+      firstBreakMismatch !== null && alternateFirstBreakMismatch === null
+        ? `${browserLineMethod} mismatch disappears with ${alternateBrowserLineMethod}`
+        : null
 
     const report = withRequestId({
       status: 'ready',
@@ -514,7 +531,11 @@ function init(): void {
       diffPx: predicted.height + PADDING * 2 - actualHeight,
       predictedLineCount: ourLines.length,
       browserLineCount: browserLines.length,
-      firstBreakMismatch: getFirstBreakMismatch(normalizedText, contentWidth, ourLines, browserLines),
+      firstBreakMismatch,
+      alternateBrowserLineMethod,
+      alternateBrowserLineCount: alternateBrowserLines.length,
+      alternateFirstBreakMismatch,
+      extractorSensitivity,
     })
 
     stats.textContent =

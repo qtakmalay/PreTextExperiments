@@ -37,6 +37,10 @@ type ProbeReport = {
     browserDomWidth: number
     browserFullWidth: number
   } | null
+  alternateBrowserLineMethod?: 'range' | 'span'
+  alternateBrowserLineCount?: number
+  alternateFirstBreakMismatch?: object | null
+  extractorSensitivity?: string | null
   message?: string
 }
 
@@ -79,6 +83,18 @@ function printReport(report: ProbeReport): void {
   )
   if (report.browserLineMethod !== undefined) {
     console.log(`  browser line method: ${report.browserLineMethod}`)
+  }
+  if (report.extractorSensitivity !== null && report.extractorSensitivity !== undefined) {
+    console.log(`  extractor sensitivity: ${report.extractorSensitivity}`)
+  }
+  if (
+    report.alternateBrowserLineMethod !== undefined &&
+    report.alternateBrowserLineCount !== undefined
+  ) {
+    console.log(
+      `  alternate method: ${report.alternateBrowserLineMethod} (${report.predictedLineCount}/${report.alternateBrowserLineCount} lines)` +
+      (report.alternateFirstBreakMismatch === null ? ' exact' : ''),
+    )
   }
   if (report.firstBreakMismatch !== null && report.firstBreakMismatch !== undefined) {
     const mismatch = report.firstBreakMismatch
