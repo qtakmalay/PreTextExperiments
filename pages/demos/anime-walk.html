@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Anime character walks across a magazine-style text layout. Text reflows around the character in real-time, powered by Pretext.">
+  <title>Anime Walk — Pretext Demo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; }
+    html, body {
+      background: #f5f1ea;
+      color: #2a2520;
+      height: 100vh;
+      overflow: hidden;
+    }
+    body { font-family: "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif; }
+
+    #stage { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+
+    .line {
+      position: absolute; white-space: pre; z-index: 1;
+      color: #2a2520;
+      font: 17px/26px "Iowan Old Style", "Palatino Linotype", "Book Antiqua", Palatino, serif;
+      user-select: text; -webkit-user-select: text;
+    }
+
+    .drop-cap {
+      position: absolute; z-index: 2; pointer-events: none;
+      font: 700 72px/1 Georgia, "Times New Roman", serif;
+      color: #8b4513;
+    }
+
+    .character {
+      position: absolute; z-index: 10; pointer-events: none;
+      will-change: transform;
+      image-rendering: auto;
+    }
+
+    .col-rule {
+      position: absolute; z-index: 0;
+      width: 1px; background: #d8cec3;
+    }
+
+    .header {
+      position: absolute; z-index: 2;
+      font: 700 11px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: #955f3b;
+    }
+
+    .hint {
+      position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+      font: 400 11px/1 "Helvetica Neue", Helvetica, Arial, sans-serif;
+      color: rgba(0,0,0,0.25); z-index: 20; pointer-events: none;
+    }
+    .back {
+      position: fixed; top: 16px; left: 16px;
+      color: rgba(0,0,0,0.3); text-decoration: none;
+      font: 12px "Helvetica Neue", sans-serif; z-index: 20;
+    }
+    .back:hover { color: #955f3b; }
+  </style>
+</head>
+<body>
+  <div id="stage"></div>
+  <a class="back" href="/demos">&larr; Demos</a>
+  <div class="hint">Character walks autonomously &middot; Text reflows at 60fps &middot; Zero DOM reads</div>
+
+  <script type="module" src="./anime-walk.ts"></script>
+</body>
+</html>
