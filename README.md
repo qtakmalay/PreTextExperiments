@@ -4,6 +4,8 @@ Experimental demos built on top of [@chenglou/pretext](https://github.com/chengl
 
 Pretext measures text via Canvas and lays it out with pure arithmetic at 60fps. No `getBoundingClientRect`, no `offsetHeight`, zero DOM reflow in the hot path. These demos explore what that unlocks.
 
+![Dragon demo — text reflows around an 80-segment cursor-following dragon at 60fps](preview.jpg)
+
 ## Demos
 
 ### Dragon
