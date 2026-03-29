@@ -6,7 +6,9 @@ const outdir = path.join(root, 'site')
 const entrypoints = [
   'pages/demos/index.html',
   'pages/demos/accordion.html',
+  'pages/demos/anime-walk.html',
   'pages/demos/bubbles.html',
+  'pages/demos/dragon.html',
   'pages/demos/dynamic-layout.html',
   'pages/demos/editorial-engine.html',
   'pages/demos/masonry/index.html',
@@ -30,7 +32,9 @@ if (result.exitCode !== 0) {
 const targets = [
   { source: 'index.html', target: 'index.html' },
   { source: 'accordion.html', target: 'accordion/index.html' },
+  { source: 'anime-walk.html', target: 'anime-walk/index.html' },
   { source: 'bubbles.html', target: 'bubbles/index.html' },
+  { source: 'dragon.html', target: 'dragon/index.html' },
   { source: 'dynamic-layout.html', target: 'dynamic-layout/index.html' },
   { source: 'editorial-engine.html', target: 'editorial-engine/index.html' },
   { source: 'masonry/index.html', target: 'masonry/index.html' },
